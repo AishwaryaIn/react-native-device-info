@@ -139,7 +139,75 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     KeyguardManager keyguardManager = (KeyguardManager) this.reactContext.getApplicationContext().getSystemService(Context.KEYGUARD_SERVICE); //api 16+
     callback.invoke(keyguardManager.isKeyguardSecure());
   }
+  @ReactMethod
+  public String getAuthonticationConfirmed() {
+    Activity currentActivity = getCurrentActivity();
+    KeyguardManager keyguardManager = (KeyguardManager) this.reactContext.getApplicationContext().getSystemService(Context.KEYGUARD_SERVICE); //api 16+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      Intent i = keyguardManager.createConfirmDeviceCredentialIntent("Unlock", "Confirm your screen lock PIN,Pattern or Password");
+      try {
+        //Start activity for result
+        currentActivity.startActivityForResult(i, LOCK_REQUEST_CODE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+          if(!keyguardManager.isKeyguardLocked()){
+            AuthFlag = "Success";
+          }else{
+            AuthFlag = "Failed";
+          }
+        }
+      } catch (Exception e) {
+        Intent intent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
+        try {
 
+          //Start activity for result
+          currentActivity.startActivityForResult(intent, SECURITY_SETTING_REQUEST_CODE);
+        } catch (Exception ex) {
+          //If app is unable to find any Security settings then user has to set screen lock manually
+//          AuthFlag = "Please set the screen lock Manually by navigating to Settings";
+
+        }
+        AuthFlag = "Failed";
+      }
+    }
+    return AuthFlag;
+  }
+  private final ActivityEventListener mActivityEventListener = new BaseActivityEventListener() {
+  @Override
+  public void onActivityResult(Activity activity,int requestCode, int resultCode, Intent data) {
+    switch (requestCode) {
+      case LOCK_REQUEST_CODE:
+        if (resultCode == Activity.RESULT_OK) {
+          AuthFlag = "Success";
+        } else {
+          AuthFlag = "Failed";
+        }
+        break;
+      case SECURITY_SETTING_REQUEST_CODE:
+        //When user is enabled Security settings then we don't get any kind of RESULT_OK
+        //So we need to check whether device has enabled screen lock or not
+        if (isDeviceSecure()) {
+          AuthFlag = "Failed";
+          //If screen lock enabled show toast and start intent to authenticate user
+
+        } else {
+          //If screen lock is not enabled just update text
+            AuthFlag = "Device is not secure or user cancel the request.";
+        }
+
+        break;
+    }
+  }
+  };
+
+  private boolean isDeviceSecure() {
+    KeyguardManager keyguardManager = (KeyguardManager) this.reactContext.getApplicationContext().getSystemService(Context.KEYGUARD_SERVICE);
+
+    //this method only work whose api level is greater than or equal to Jelly_Bean (16)
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && keyguardManager.isKeyguardSecure();
+
+    //You can also use keyguardManager.isDeviceSecure(); but it requires API Level 23
+
+  }
   @ReactMethod
   public void getIpAddress(Promise p) {
     String ipAddress = Formatter.formatIpAddress(getWifiInfo().getIpAddress());
@@ -299,6 +367,7 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     constants.put("isTablet", this.isTablet());
     constants.put("fontScale", this.fontScale());
     constants.put("is24Hour", this.is24Hour());
+    constants.put("getAuthonticationConfirmed", this.getAuthonticationConfirmed());
     if (getCurrentActivity() != null &&
         (getCurrentActivity().checkCallingOrSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
             getCurrentActivity().checkCallingOrSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED ||
