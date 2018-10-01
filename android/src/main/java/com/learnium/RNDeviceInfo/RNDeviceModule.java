@@ -1,6 +1,7 @@
 package com.learnium.RNDeviceInfo;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.KeyguardManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
@@ -17,6 +18,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.os.BatteryManager;
+import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.webkit.WebSettings;
 import android.telephony.TelephonyManager;
@@ -24,6 +26,8 @@ import android.text.format.Formatter;
 import android.app.ActivityManager;
 import android.util.DisplayMetrics;
 
+import com.facebook.react.bridge.ActivityEventListener;
+import com.facebook.react.bridge.BaseActivityEventListener;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -42,11 +46,11 @@ import java.net.NetworkInterface;
 import javax.annotation.Nullable;
 
 public class RNDeviceModule extends ReactContextBaseJavaModule {
-
+  private static final int LOCK_REQUEST_CODE = 221;
+  private static final int SECURITY_SETTING_REQUEST_CODE = 233;
   ReactApplicationContext reactContext;
 
   WifiInfo wifiInfo;
-
   public RNDeviceModule(ReactApplicationContext reactContext) {
     super(reactContext);
 
@@ -139,7 +143,7 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     KeyguardManager keyguardManager = (KeyguardManager) this.reactContext.getApplicationContext().getSystemService(Context.KEYGUARD_SERVICE); //api 16+
     callback.invoke(keyguardManager.isKeyguardSecure());
   }
-  @ReactMethod
+@ReactMethod
   public String getAuthonticationConfirmed() {
     Activity currentActivity = getCurrentActivity();
     KeyguardManager keyguardManager = (KeyguardManager) this.reactContext.getApplicationContext().getSystemService(Context.KEYGUARD_SERVICE); //api 16+
@@ -150,9 +154,7 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
         currentActivity.startActivityForResult(i, LOCK_REQUEST_CODE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
           if(!keyguardManager.isKeyguardLocked()){
-            AuthFlag = "Success";
           }else{
-            AuthFlag = "Failed";
           }
         }
       } catch (Exception e) {
@@ -166,10 +168,9 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
 //          AuthFlag = "Please set the screen lock Manually by navigating to Settings";
 
         }
-        AuthFlag = "Failed";
       }
     }
-    return AuthFlag;
+    return "";
   }
   private final ActivityEventListener mActivityEventListener = new BaseActivityEventListener() {
   @Override
@@ -177,24 +178,24 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     switch (requestCode) {
       case LOCK_REQUEST_CODE:
         if (resultCode == Activity.RESULT_OK) {
-          AuthFlag = "Success";
-        } else {
-          AuthFlag = "Failed";
+//          AuthFlag = "Success";
         }
+//        else {
+//          AuthFlag = "Failed";
+//        }
         break;
-      case SECURITY_SETTING_REQUEST_CODE:
+//      case SECURITY_SETTING_REQUEST_CODE:
         //When user is enabled Security settings then we don't get any kind of RESULT_OK
         //So we need to check whether device has enabled screen lock or not
-        if (isDeviceSecure()) {
-          AuthFlag = "Failed";
-          //If screen lock enabled show toast and start intent to authenticate user
+//        if (isDeviceSecure()) {
+//          AuthFlag = "Failed";
+//          //If screen lock enabled show toast and start intent to authenticate user
+//
+//        } else {
+//          //If screen lock is not enabled just update text
+//            AuthFlag = "Device is not secure or user cancel the request.";
+//        }
 
-        } else {
-          //If screen lock is not enabled just update text
-            AuthFlag = "Device is not secure or user cancel the request.";
-        }
-
-        break;
     }
   }
   };
