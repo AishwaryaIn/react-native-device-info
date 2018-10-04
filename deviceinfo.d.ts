@@ -39,7 +39,7 @@ declare const _default: {
   getTotalDiskCapacity: () => number;
   getFreeDiskStorage: () => number;
   getBatteryLevel: () => Promise<number>;
-  getAuthonticationConfirmed: () => string;
+  getAuthonticationConfirmed: (cb: (authcationStatus: string) => void) => void;
 };
 
 export default _default;
