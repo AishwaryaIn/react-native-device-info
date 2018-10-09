@@ -122,6 +122,6 @@ export default {
     return RNDeviceInfo.getBatteryLevel();
   },
   getAuthonticationConfirmed: function() {
-    return RNDeviceInfo.getAuthonticationConfirmed;
+    return RNDeviceInfo.getAuthonticationConfirmed();
   },
 };
